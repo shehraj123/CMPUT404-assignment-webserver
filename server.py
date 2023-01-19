@@ -35,6 +35,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
 
+        if len(str(self.data)) == 0:
+            self.request.sendall(b"HTTP/1.1 403 Forbidden\r\n")
+
         method, address, host = self.parse_request(self.data)
 
         # Handle GET
@@ -52,6 +55,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
         if address.endswith('/'):
             address += 'index.html'
 
+        if address.startswith('/..'):
+            return bytearray("HTTP/1.1 403 Forbidden\r\n", 'utf-8')
+
         try:
             with open("./www" + address, "r") as file:
                 data = file.read()
@@ -59,12 +65,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 header = "HTTP/1.1 200 OK\r\n"
                 type, encoding = mimetypes.guess_type("./www" + address)
                 
-                metadata = "Content-Type: " + type + "\r\n"
-                if encoding:
-                    metadata += "Content-Encoding: " + encoding + "\r\n"
-                metadata += "Content-Length: " + str(len(data)) + "\r\n"
+                metadata = "Content-Type: " + type + "\r\n\n"
 
-                response = header + metadata + data + "\r\n"
+                response = header + metadata + data + "\r\n\n"
 
                 response = response.encode('utf-8')
 
@@ -97,8 +100,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         # Getting the method and the complete address (including hostname) of the request
         method, compaddress = request.split(' ')[0].strip(), request.split(' ')[1].strip()
-
-        print("\nAddress: " + compaddress + '\n')
 
         return method, compaddress, host
         
