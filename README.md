@@ -30,3 +30,9 @@ References
 Entity: Mozilla Foundation
 URL: https://developer.mozilla.org/en-US/docs/Web/HTTP/Messages
 
+Entity: Mozilla Foundation
+URL: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/301
+
+Entity: Mozilla Foundation
+URL: https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections
+
