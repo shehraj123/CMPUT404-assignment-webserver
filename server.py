@@ -97,6 +97,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         # Getting the method and the complete address (including hostname) of the request
         method, compaddress = request.split(' ')[0].strip(), request.split(' ')[1].strip()
+
+        print("\nAddress: " + compaddress + '\n')
+
         return method, compaddress, host
         
 
