@@ -36,3 +36,6 @@ URL: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/301
 Entity: Mozilla Foundation
 URL: https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections
 
+Entity: Python Software Foundation
+URL: https://docs.python.org/3/library/urllib.parse.html#module-urllib.parse
+
