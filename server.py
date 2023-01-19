@@ -3,7 +3,7 @@ import socketserver
 
 import mimetypes
 
-# Copyright 2013 Abram Hindle, Eddie Antonio Santos
+# Copyright 2023 Shehraj Singh
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         if len(str(self.data)) == 0:
             self.request.sendall(b"HTTP/1.1 403 Forbidden\r\n")
+            return
 
         method, address, host = self.parse_request(self.data)
 
@@ -56,7 +57,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
             address += 'index.html'
 
         if address.startswith('/..'):
-            return bytearray("HTTP/1.1 403 Forbidden\r\n", 'utf-8')
+            return bytearray("HTTP/1.1 404 Not Found\r\n", 'utf-8')
 
         try:
             with open("./www" + address, "r") as file:
@@ -77,7 +78,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
             return bytearray("HTTP/1.1 404 Not Found\r\n", 'utf-8')
 
         except IsADirectoryError:
-            response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: " + address + '/index.html\r\n', 'utf-8')
+            response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: " + address + '/\r\n', 'utf-8')
             return response
         
         
