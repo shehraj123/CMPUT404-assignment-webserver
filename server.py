@@ -1,6 +1,8 @@
 #  coding: utf-8 
 import socketserver
 
+import mimetypes
+
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,7 +34,74 @@ class MyWebServer(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
-        self.request.sendall(bytearray("OK",'utf-8'))
+
+        method, address, host = self.parse_request(self.data)
+
+        # Handle GET
+        if method == 'GET':
+            response = self.generate_response(address, host)
+            self.request.sendall(response)
+
+        # Handle disallowed different methods
+        else:
+            self.request.sendall(bytearray("HTTP/1.1 405 Method Not Allowed\r\n", "utf-8"))
+
+
+    def generate_response(self, address, host) -> bytearray:
+
+        if address.endswith('/'):
+            address += 'index.html'
+
+        try:
+            with open("./www" + address, "r") as file:
+                data = file.read()
+
+                header = "HTTP/1.1 200 OK\r\n"
+                type, encoding = mimetypes.guess_type("./www" + address)
+                
+                metadata = "Content-Type: " + type + "\r\n"
+                if encoding:
+                    metadata += "Content-Encoding: " + encoding + "\r\n"
+                metadata += "Content-Length: " + str(len(data)) + "\r\n"
+
+                response = header + metadata + data + "\r\n"
+
+                response = response.encode('utf-8')
+
+                return response
+
+        except FileNotFoundError:
+            return bytearray("HTTP/1.1 404 Not Found\r\n", 'utf-8')
+
+        except IsADirectoryError:
+            response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: " + address + '/index.html\r\n', 'utf-8')
+            return response
+        
+        
+
+    def parse_request(self, text: bytearray) -> tuple:
+
+        # Convert back to string
+        text = text.decode('utf-8')
+
+        parts = text.split('\n')
+        
+        # Remove all extra new lines
+        # This has to be done according to RFC 2616
+        for part in parts:
+            if part == '':
+                parts.remove(part)
+        request = parts[0]
+
+        host = parts[1].split(' ')[1].strip()
+
+        # Getting the method and the complete address (including hostname) of the request
+        method, compaddress = request.split(' ')[0].strip(), request.split(' ')[1].strip()
+        return method, compaddress, host
+        
+
+
+
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
@@ -44,3 +113,5 @@ if __name__ == "__main__":
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C
     server.serve_forever()
+
+    
