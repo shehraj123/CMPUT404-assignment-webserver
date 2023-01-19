@@ -1,6 +1,6 @@
 #  coding: utf-8 
 import socketserver
-
+from urllib.parse import urlparse
 import mimetypes
 
 # Copyright 2023 Shehraj Singh
@@ -35,8 +35,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
 
-        if len(str(self.data)) == 0:
-            self.request.sendall(b"HTTP/1.1 403 Forbidden\r\n")
+        if len(str(self.data.decode('utf-8'))) == 0: # Browser sends empty requests sometimes
+            self.request.sendall(b"HTTP/1.1 404 Not Found\r\n")
             return
 
         method, address, host = self.parse_request(self.data)
@@ -52,6 +52,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
 
     def generate_response(self, address, host) -> bytearray:
+
+        # print("\nHost: ", host)
+        # print("Path received:", address, '\n')
 
         if address.endswith('/'):
             address += 'index.html'
@@ -78,7 +81,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
             return bytearray("HTTP/1.1 404 Not Found\r\n", 'utf-8')
 
         except IsADirectoryError:
-            response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: " + address + '/\r\n', 'utf-8')
+            response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + host + address + '/\r\n', 'utf-8')
+            # response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: " + address + '/\r\n', 'utf-8')
             return response
         
         
@@ -97,12 +101,14 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 parts.remove(part)
         request = parts[0]
 
-        host = parts[1].split(' ')[1].strip()
-
         # Getting the method and the complete address (including hostname) of the request
-        method, compaddress = request.split(' ')[0].strip(), request.split(' ')[1].strip()
+        method = request.split(' ')[0].strip()
+        compaddress = urlparse(request.split(' ')[1].strip())
+        address = compaddress.path
 
-        return method, compaddress, host
+        host = compaddress.netloc
+
+        return method, address, host
         
 
 
