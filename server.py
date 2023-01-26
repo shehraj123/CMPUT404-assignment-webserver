@@ -41,10 +41,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
             return
 
         method, address = self.parse_request(self.data)
-        # print("Parsed")
-        # print("Method:", method)
-        # print("Address:", address)
-        # print("Host:", host)
+
 
         # Handle GET
         if method == 'GET':
@@ -117,16 +114,11 @@ class MyWebServer(socketserver.BaseRequestHandler):
         valid_start = os.getcwd() + "/www"
         
         # Checking
-        print("valid_start:",valid_start)
-        print("Before resolve:", path)
         check = Path("www" + path)
         check = check.resolve().as_posix()
         check = str(check)
         
-        print("check:",check)
-
         if not check.startswith(valid_start):
-            print("Invalid path")
             return method, None
 
         print(path)
