@@ -2,6 +2,8 @@
 import socketserver
 from urllib.parse import urlparse
 import mimetypes
+from pathlib import Path
+import os
 
 # Copyright 2023 Shehraj Singh
 # 
@@ -35,32 +37,35 @@ class MyWebServer(socketserver.BaseRequestHandler):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
 
-        if len(str(self.data.decode('utf-8'))) == 0: # Browser sends empty requests sometimes
-            self.request.sendall(b"HTTP/1.1 404 Not Found\r\n")
+        if len(str(self.data.decode('utf-8'))) == 0: 
             return
 
-        method, address, host = self.parse_request(self.data)
+        method, address = self.parse_request(self.data)
+        # print("Parsed")
+        # print("Method:", method)
+        # print("Address:", address)
+        # print("Host:", host)
 
         # Handle GET
         if method == 'GET':
-            response = self.generate_response(address, host)
+            response = self.generate_response(address)
             self.request.sendall(response)
 
         # Handle disallowed different methods
         else:
-            self.request.sendall(bytearray("HTTP/1.1 405 Method Not Allowed\r\n", "utf-8"))
+            self.request.sendall(bytearray("HTTP/1.1 405 Method Not Allowed\r\n\n", "utf-8"))
 
 
-    def generate_response(self, address, host) -> bytearray:
+    def generate_response(self, address, host="") -> bytearray:
 
-        # print("\nHost: ", host)
-        # print("Path received:", address, '\n')
+        if address == None:
+            return bytearray("HTTP/1.1 404 Not Found\r\n\n", 'utf-8')
 
         if address.endswith('/'):
             address += 'index.html'
 
         if address.startswith('/..'):
-            return bytearray("HTTP/1.1 404 Not Found\r\n", 'utf-8')
+            return bytearray("HTTP/1.1 404 Not Found\r\n\n", 'utf-8')
 
         try:
             with open("./www" + address, "r") as file:
@@ -78,12 +83,15 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 return response
 
         except FileNotFoundError:
-            return bytearray("HTTP/1.1 404 Not Found\r\n", 'utf-8')
+            return bytearray("HTTP/1.1 404 Not Found\r\n\n", 'utf-8')
 
         except IsADirectoryError:
-            response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + host + address + '/\r\n', 'utf-8')
-            # response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: " + address + '/\r\n', 'utf-8')
+            # response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: http://" + host + address + '/\r\n', 'utf-8')
+            response = bytearray("HTTP/1.1 301 Moved Permanently\r\nLocation: " + address + '/\r\n', 'utf-8')
             return response
+        except Exception:
+            return bytearray("HTTP/1.1 404 Not Found\r\n\n", 'utf-8')
+
         
         
 
@@ -103,12 +111,26 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         # Getting the method and the complete address (including hostname) of the request
         method = request.split(' ')[0].strip()
-        compaddress = urlparse(request.split(' ')[1].strip())
-        address = compaddress.path
 
-        host = compaddress.netloc
+        path = request.split(' ')[1].strip()
 
-        return method, address, host
+        valid_start = os.getcwd() + "/www"
+        
+        # Checking
+        print("valid_start:",valid_start)
+        print("Before resolve:", path)
+        check = Path("www" + path)
+        check = check.resolve().as_posix()
+        check = str(check)
+        
+        print("check:",check)
+
+        if not check.startswith(valid_start):
+            print("Invalid path")
+            return method, None
+
+        print(path)
+        return method, path
         
 
 
